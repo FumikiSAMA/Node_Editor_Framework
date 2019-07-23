@@ -191,6 +191,18 @@ namespace NodeEditorFramework
 			}
 			port.connections.Add (this);
 
+#if UNITY_EDITOR
+			if (!silent)
+			{ // Create Undo record
+			  // Important: Copy variables used within anonymous functions within same level (this if block) for correct serialization!
+				ConnectionPort port1 = this, port2 = port;
+				UndoPro.UndoProManager.RecordOperation(
+					() => NodeEditorUndoActions.CreateConnection(port1, port2),
+					() => NodeEditorUndoActions.DeleteConnection(port1, port2),
+					"Create Connection");
+			}
+#endif
+
 			if (!silent)
 			{ // Callbacks
 				port.body.OnAddConnection (port, this);
@@ -214,9 +226,22 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void RemoveConnection (ConnectionPort port, bool silent = false)
 		{
+#if UNITY_EDITOR
+			if (silent == false && port != null)
+			{ // Undo record
+				// Important: Copy variables used within anonymous functions within same level (this if block) for correct serialization!
+				ConnectionPort port1 = this, port2 = port;
+				UndoPro.UndoProManager.RecordOperation(
+					() => NodeEditorUndoActions.DeleteConnection(port1, port2),
+					() => NodeEditorUndoActions.CreateConnection(port1, port2),
+					"Delete Connection");
+			}
+#endif
+
 			if (port == null)
 			{
-				connections.RemoveAll (p => p != null);
+				Debug.LogWarning("Cannot delete null port!");
+				//connections.RemoveAll (p => p != null);
 				return;
 			}
 
